@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scratch Arcade</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+  text-align: center;
+}
+
+/* Logo */
+.logo img {
+  width: 350px;
+  max-width: 90%;
+  margin: 30px 0;
+  filter: drop-shadow(0 0 15px black);
+  transition: 0.3s;
+}
+.logo img:hover {
+  transform: scale(1.05);
+}
+
+/* Input */
+.top-bar {
+  margin-bottom: 15px;
+}
+
+input {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  width: 200px;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #22c55e;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #16a34a;
+  transform: scale(1.05);
+}
+
+/* Game frame */
+.game-container {
+  position: relative;
+  display: inline-block;
+  background: #000;
+  padding: 12px;
+  border-radius: 16px;
+  box-shadow: 0 0 25px rgba(0,0,0,0.6);
+}
+
+iframe {
+  width: 485px;
+  height: 402px;
+  border: none;
+  border-radius: 10px;
+}
+
+/* Fullscreen */
+.fullscreen-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  font-size: 14px;
+  padding: 6px 10px;
+}
+.fullscreen-btn:hover {
+  background: rgba(0,0,0,0.9);
+}
+
+/* Panel */
+.panel {
+  margin: 25px auto;
+  width: 500px;
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+/* Game list */
+.game-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  margin-bottom: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.game-item:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.game-name {
+  cursor: pointer;
+}
+.game-name:hover {
+  color: #22c55e;
+  text-decoration: underline;
+}
+
+.delete-btn {
+  background: #ef4444;
+  padding: 5px 10px;
+}
+.delete-btn:hover {
+  background: #dc2626;
+}
+
+.add-area {
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="logo">
+  <img src="https://file.garden/Z_Zkhskjxktxt43S/abcdefghijklmnopqrztuvexyz/sarcade-2.png">
+</div>
+
+<div class="top-bar">
+  <input id="projectIdInput" placeholder="Enter Game ID">
+  <button onclick="loadProject()">Play</button>
+</div>
+
+<div class="game-container" id="gameContainer">
+  <button class="fullscreen-btn" onclick="goFullscreen()">⛶</button>
+  <iframe id="viewer"></iframe>
+</div>
+
+<div class="panel">
+  <h2>Saved Games</h2>
+  <div id="projectList"></div>
+
+  <div class="add-area">
+    <input id="nameInput" placeholder="Game Name">
+    <input id="idInput" placeholder="Game ID">
+    <button onclick="addProject()">Add</button>
+  </div>
+</div>
+
+<script>
+const viewer = document.getElementById("viewer");
+const container = document.getElementById("gameContainer");
+
+/* DEFAULT GAMES (non-deletable) */
+const defaultGames = [
+  { name: "Paper Minecraft", id: "10128407" },
+  { name: "Flappy Bird", id: "1166545718" },
+  { name: "Cookie Clicker", id: "1117005029" },
+  { name: "Atari Breakout", id: "1154723495" },
+  { name: "Knockout", id: "1291832100" },
+  { name: "Getting Over It Scratch", id: "389464290" }
+];
+
+function loadProject(id = null) {
+  const input = document.getElementById("projectIdInput");
+  const projectId = id || input.value.trim();
+  if (!projectId) return;
+
+  viewer.src = `https://scratch.mit.edu/projects/${projectId}/embed`;
+}
+
+// Fullscreen
+function goFullscreen() {
+  if (container.requestFullscreen) {
+    container.requestFullscreen();
+  }
+}
+
+// Storage
+function getUserGames() {
+  return JSON.parse(localStorage.getItem("scratchGames") || "[]");
+}
+
+function saveUserGames(games) {
+  localStorage.setItem("scratchGames", JSON.stringify(games));
+}
+
+// Render list
+function renderProjects() {
+  const list = document.getElementById("projectList");
+  list.innerHTML = "";
+
+  const userGames = getUserGames();
+
+  // Default games
+  defaultGames.forEach((proj) => {
+    const div = document.createElement("div");
+    div.className = "game-item";
+
+    const name = document.createElement("span");
+    name.className = "game-name";
+    name.innerHTML = `${proj.name} <span style="opacity:0.6;">(built-in)</span>`;
+    name.onclick = () => loadProject(proj.id);
+
+    div.appendChild(name);
+    list.appendChild(div);
+  });
+
+  if (userGames.length > 0) {
+    const divider = document.createElement("hr");
+    divider.style.opacity = "0.2";
+    list.appendChild(divider);
+  }
+
+  // User games
+  userGames.forEach((proj, index) => {
+    const div = document.createElement("div");
+    div.className = "game-item";
+
+    const name = document.createElement("span");
+    name.className = "game-name";
+    name.textContent = proj.name;
+    name.onclick = () => loadProject(proj.id);
+
+    const del = document.createElement("button");
+    del.textContent = "X";
+    del.className = "delete-btn";
+    del.onclick = () => deleteProject(index);
+
+    div.appendChild(name);
+    div.appendChild(del);
+    list.appendChild(div);
+  });
+}
+
+// Add game
+function addProject() {
+  const name = document.getElementById("nameInput").value.trim();
+  const id = document.getElementById("idInput").value.trim();
+
+  if (!name || !id) return;
+
+  const games = getUserGames();
+
+  // Prevent duplicates
+  if (games.some(g => g.id === id) || defaultGames.some(g => g.id === id)) {
+    alert("Game already exists!");
+    return;
+  }
+
+  games.push({ name, id });
+  saveUserGames(games);
+
+  document.getElementById("nameInput").value = "";
+  document.getElementById("idInput").value = "";
+
+  renderProjects();
+}
+
+// Delete
+function deleteProject(index) {
+  const games = getUserGames();
+  games.splice(index, 1);
+  saveUserGames(games);
+  renderProjects();
+}
+
+// Init
+renderProjects();
+
+// Auto load first game
+if (defaultGames.length > 0) {
+  loadProject(defaultGames[0].id);
+}
+</script>
+
+</body>
+</html>
